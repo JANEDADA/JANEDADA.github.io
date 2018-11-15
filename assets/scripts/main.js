@@ -165,14 +165,14 @@ var states = {
             //collide 元素碰撞时会产生一个物理碰撞的效果 overlap不会产生碰撞的效果
             game.physics.arcade.collide(platforms, goal, collisionHandler);
             game.physics.arcade.overlap(platforms, keeper, function (player, veg) {
-                bullet.reset(arrow.x - 8, arrow.y - 8);
-                bullet.body.bounce.y = 2;
-                bullet.body.bounce.x = 2;
-                bullet.body.gravity.y = -100;
-
-                overtime.play();
+    
+            overtime.play();
               
-                veg.kill();
+            veg.kill();
+               
+               
+
+              
               
             });
             getScore();
@@ -195,7 +195,7 @@ var states = {
             inGoal();
             setTimeout(function () {
                 veg.kill();
-            }, 200)
+            }, 600)
             score += 10;
             scoreText.text = 'Score: ' + score;
             if (score === 30 || score === 50 || score === 80) {
