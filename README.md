@@ -4,3 +4,6 @@ You can use the [editor on GitHub](https://github.com/JANEDADA/JANEDADA.github.i
 
 基于phaser的html5轻量级小游戏，射击类足球游戏。欢迎探讨、给出建议。
 使用方法：安装node及http-server 即可在服务上运行。
+
+访问https://xiaojuanstar.github.io/HappyFootball
+即可预览游戏。
