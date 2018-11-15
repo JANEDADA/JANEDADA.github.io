@@ -158,7 +158,7 @@ var states = {
             if (game.input.activePointer.isDown) {
                 fire()
             }
-            if (timesAfter - 3000> timesBefore) {
+            if (timesAfter - 2000> timesBefore) {
                 tween.resume()
             }
 
