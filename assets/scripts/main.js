@@ -126,7 +126,7 @@ var states = {
             tween = game.add.tween(keeper).to({
                 x: width - 80
             }, 2000, Phaser.Easing.Quadratic.InOut, true, 0, 1000, true);
-
+            // getRandomIntInclusive(1,3)
 
 
 
