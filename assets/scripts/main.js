@@ -5,6 +5,8 @@ var game = new Phaser.Game(width, height, Phaser.AUTO, 'content');
 var timeText;
 var scoreText;
 var score = 0;
+var timesAfter;
+var timesBefore;
 // 定义场景
 var states = {
     //加载场景
@@ -91,16 +93,16 @@ var states = {
             // 添加背景音乐
             bgMusic = game.add.audio('bgMusic');
             bgMusic.play();
-             // 缓存其他音乐
+            // 缓存其他音乐
             footballMusic = game.add.audio('football');
             happyMusic = game.add.audio('happy');
             overtime = game.add.audio('overtime');
             //60秒后游戏结束
-            game.time.events.add(Phaser.Timer.SECOND * 60, function () { 
+            game.time.events.add(Phaser.Timer.SECOND * 60, function () {
                 happyMusic.play();
                 game.state.start('gameOver');
             }, this);
-            
+
             //得分
             scoreText = game.add.text(16, 16, 'score: 0', {
                 fontSize: '32px',
@@ -120,12 +122,14 @@ var states = {
             arrow = game.add.sprite((width / 2 - 20), (height - 100), 'arrow');
 
 
+
             tween = game.add.tween(keeper).to({
                 x: width - 80
-            }, 2000, "Linear", true);
-            tween.onComplete.addOnce(tween2, this);
+            }, 2000, Phaser.Easing.Quadratic.InOut, true, 0, 1000, true);
 
-            
+
+
+
 
             //建一个合并、回收、检测碰撞的容器
             platforms = game.add.group();
@@ -135,6 +139,7 @@ var states = {
 
             platforms.createMultiple(1, 'ball');
 
+
             platforms.setAll('checkWorldBounds', true);
             platforms.setAll('outOfBoundsKill', true);
 
@@ -143,23 +148,37 @@ var states = {
 
             arrow.anchor.set(0.5);
             arrow.body.allowRotation = true;
-          
+
+            bullet = platforms.getFirstDead();
+
         }
         this.update = function () {
             arrow.rotation = game.physics.arcade.angleToPointer(arrow);
+            timesAfter = game.time.time;
             if (game.input.activePointer.isDown) {
                 fire()
             }
+            if (timesAfter - 3000> timesBefore) {
+                tween.resume()
+            }
+
             //collide 元素碰撞时会产生一个物理碰撞的效果 overlap不会产生碰撞的效果
             game.physics.arcade.collide(platforms, goal, collisionHandler);
             game.physics.arcade.overlap(platforms, keeper, function (player, veg) {
+                bullet.reset(arrow.x - 8, arrow.y - 8);
+                bullet.body.bounce.y = 2;
+                bullet.body.bounce.x = 2;
+                bullet.body.gravity.y = -100;
+
                 overtime.play();
+              
                 veg.kill();
+              
             });
             getScore();
         }
 
-        function getScore() { 
+        function getScore() {
             var item, t = game.time.events.duration.toString();
             if (t.length === 5) {
                 item = t.substr(0, 2)
@@ -179,83 +198,97 @@ var states = {
             }, 200)
             score += 10;
             scoreText.text = 'Score: ' + score;
-            if (score === 100||score === 200||score === 300) { 
+            if (score === 30 || score === 50 || score === 80) {
                 happyMusic.play();
             }
         }
+
         function fire() {
+            tween.pause()
             if (game.time.now > nextFire && platforms.countDead() > 0) {
+                timesBefore = game.time.time;
                 nextFire = game.time.now + fireRate;
-        
-                var bullet = platforms.getFirstDead();
-        
+               
                 bullet.reset(arrow.x - 8, arrow.y - 8);
                 //设置弹跳、重力
-                bullet.body.bounce.y = 0.3;
-                bullet.body.bounce.x = 0.5;
+                bullet.body.bounce.y = 1;
+                bullet.body.bounce.x = 1;
                 bullet.body.gravity.y = -100;
                 game.physics.arcade.moveToPointer(bullet, 300);
-            }
+
+               
+                if (arrow.angle < 0 && arrow.angle >= -60) {
+               
+                    keeper.body.velocity.x = 5; //给设一个向右的速度
+                    game.add.tween(keeper).to({
+                        x: width - 120
+                    }, 300, "Linear", true); //右移动的动画
+                    setTimeout(function () {
+                        keeper.body.velocity.x = 0;
+                    }, 300)
+                } else if (arrow.angle < -60 && arrow.angle > -90) {
+                   
+                    keeper.body.velocity.x = 5;
+                    game.add.tween(keeper).to({
+                        x: width / 2 + 30
+                    }, 300, "Linear", true);
+
+                } else if (arrow.angle <= -90 && arrow.angle > -105) {
+                  
+                    keeper.body.velocity.x = -5;
+                    game.add.tween(keeper).to({
+                        x: width / 4 + 42
+                    }, 300, "Linear", true);
+
+                } else if (arrow.angle <= -105 && arrow.angle >= -180) {
         
+                    keeper.body.velocity.x = -5;
+                    game.add.tween(keeper).to({
+                        x: 0
+                    }, 300, "Linear", true);
+                } else {
+                   
+                    game.add.tween(keeper).to({
+                        x: width / 2 - 42
+                    }, 300, "Linear", true);
+                }
+                setTimeout(function () {
+                    keeper.body.velocity.x = 0;
+                }, 300);
+            }
+
         }
-        function inGoal() { 
-            var grade = game.add.image(width / 2, (height - 100), 'score');
+
+        function inGoal() {
+            var grade = game.add.image(width / 2, (height - 120), 'score');
             grade.alpha = 0;
-            
+
             // 添加过渡效果 得分
             var showTween = game.add.tween(grade).to({
                 alpha: 1,
                 y: grade.y - 20
-            }, 100, Phaser.Easing.Linear.None, true, 0, 0, false);
+            }, 300, Phaser.Easing.Linear.None, true, 0, 0, false);
             showTween.onComplete.add(function () {
                 var hideTween = game.add.tween(grade).to({
                     alpha: 0,
                     y: grade.y - 20
-                }, 100, Phaser.Easing.Linear.None, true, 200, 0, false);
+                }, 300, Phaser.Easing.Linear.None, true, 200, 0, false);
                 hideTween.onComplete.add(function () {
                     grade.kill();
                 });
             });
         }
-        function tween2() {
-            tween = game.add.tween(keeper.scale).to({
-                x: 1.5,
-                y: 1.5
-            }, 100, "Linear", true);
-            tween.onComplete.addOnce(tween3, this);
-        }
-        
-        function tween3() {
-            tween = game.add.tween(keeper).to({
-                x: 0
-            }, 500*getRandomIntInclusive(1,4), "Linear", true);
-            tween.onComplete.addOnce(tween4, this);
-        }
-        
-        function tween4() {
-            tween = game.add.tween(keeper.scale).to({
-                x: 1,
-                y: 1
-            }, 100, "Linear", true);
-            tween.onComplete.addOnce(tween5, this);
-        }
-        
-        function tween5() {
-            tween = game.add.tween(keeper).to({
-                x: width - 80
-            }, 700*getRandomIntInclusive(1,3), "Linear", true);
-            tween.onComplete.addOnce(tween2, this);
-        }
+
         //得到一个两数之间的随机整数，包括两个数在内
         function getRandomIntInclusive(min, max) {
             min = Math.ceil(min);
             max = Math.floor(max);
-            return Math.floor(Math.random() * (max - min + 1)) + min; 
-          }
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
     },
     gameOver: function () {
-       
-        this.create = function() {
+
+        this.create = function () {
             var bg = game.add.image(0, 0, 'bg');
             bg.width = game.world.width;
             bg.height = game.world.height;
@@ -266,7 +299,7 @@ var states = {
                 fill: '#aa6767'
             });
             title.anchor.setTo(0.5, 0.5);
-            var scoreStr = '你的得分是：'+score+'分';
+            var scoreStr = '你的得分是：' + score + '分';
             var scoreText = game.add.text(game.world.centerX, game.world.height * 0.4, scoreStr, {
                 fontSize: '30px',
                 fontWeight: 'bold',
@@ -281,7 +314,7 @@ var states = {
             });
             remind.anchor.setTo(0.5, 0.5);
             // 添加点击事件
-            game.input.onTap.add(function() {
+            game.input.onTap.add(function () {
                 game.state.start('play');
             });
         }
@@ -295,37 +328,3 @@ Object.keys(states).map(function (key) {
 
 // 启动游戏
 game.state.start('preload');
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
